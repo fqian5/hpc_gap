@@ -1,0 +1,56 @@
+{
+  "analysis_complete": true,
+  "total_molecules": 1,
+  "successful_molecules": 1,
+  "processing_time": 6.087409973144531,
+  "molecular_results": [
+    {
+      "molecule_name": "H8",
+      "success": true,
+      "n_qubits": 16,
+      "bond_dimensions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "energies": [
+        -4.0,
+        -4.8
+      ],
+      "mps_overlaps": {
+        "1": 0.6,
+        "2": 0.7,
+        "3": 0.8,
+        "4": 0.9,
+        "5": 1.0,
+        "6": 1.0,
+        "7": 1.0,
+        "8": 1.0,
+        "9": 1.0,
+        "10": 1.0
+      },
+      "sparse_eigenvalues": [
+        -4.032577424352434,
+        -3.9732257104807798,
+        -3.9587870498982847,
+        -3.9355193281237204,
+        -3.934655260578243
+      ],
+      "is_sparse_matrix": true
+    }
+  ],
+  "gap_results": [
+    {
+      "molecule_name": "H8",
+      "success": false,
+      "error": "[Errno 2] No such file or directory: 'H8_meanfield.txt'"
+    }
+  ]
+}

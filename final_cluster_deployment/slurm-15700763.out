@@ -1,0 +1,38 @@
+SUBMITTING SEPARATE JOBS FOR ALL MOLECULES
+==========================================
+Found 6 molecules: H2O H2 H4 H6 H8 N2
+
+Creating job script for H2O: run_H2O.sh
+  ✓ Submitted job 15700804 for H2O
+Creating job script for H2: run_H2.sh
+  ✓ Submitted job 15700805 for H2
+Creating job script for H4: run_H4.sh
+  ✓ Submitted job 15700806 for H4
+Creating job script for H6: run_H6.sh
+  ✓ Submitted job 15700807 for H6
+Creating job script for H8: run_H8.sh
+  ✓ Submitted job 15700808 for H8
+Creating job script for N2: run_N2.sh
+  ✓ Submitted job 15700809 for N2
+
+==========================================
+ALL JOBS SUBMITTED
+==========================================
+Total jobs: 6
+Job IDs: 15700804 15700805 15700806 15700807 15700808 15700809
+
+Helper scripts created:
+  monitor_jobs.sh  - Check job status
+  collect_results.sh - Collect results when complete
+
+Usage:
+  bash monitor_jobs.sh     # Check job status
+  bash collect_results.sh  # Collect results after jobs finish
+
+Individual job outputs will be in:
+  H2O_output.out, H2O_error.out, H2O_results/
+  H2_output.out, H2_error.out, H2_results/
+  H4_output.out, H4_error.out, H4_results/
+  H6_output.out, H6_error.out, H6_results/
+  H8_output.out, H8_error.out, H8_results/
+  N2_output.out, N2_error.out, N2_results/

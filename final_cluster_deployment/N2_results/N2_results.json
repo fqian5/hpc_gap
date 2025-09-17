@@ -1,0 +1,56 @@
+{
+  "analysis_complete": true,
+  "total_molecules": 1,
+  "successful_molecules": 1,
+  "processing_time": 48.34870433807373,
+  "molecular_results": [
+    {
+      "molecule_name": "N2",
+      "success": true,
+      "n_qubits": 20,
+      "bond_dimensions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "energies": [
+        -107.49597503059056,
+        -107.65299987563185
+      ],
+      "mps_overlaps": {
+        "1": 0.6,
+        "2": 0.7,
+        "3": 0.8,
+        "4": 0.9,
+        "5": 1.0,
+        "6": 1.0,
+        "7": 1.0,
+        "8": 1.0,
+        "9": 1.0,
+        "10": 1.0
+      },
+      "sparse_eigenvalues": [
+        -96.59634976410167,
+        -96.5963497641017,
+        -96.59634976410203,
+        -96.59634976410244,
+        -96.5963497641018
+      ],
+      "is_sparse_matrix": true
+    }
+  ],
+  "gap_results": [
+    {
+      "molecule_name": "N2",
+      "success": false,
+      "error": "[Errno 2] No such file or directory: 'N2_meanfield.txt'"
+    }
+  ]
+}
