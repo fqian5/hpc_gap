@@ -31,9 +31,12 @@ def plot_adiabatic_gaps(s_values, gaps, molecule_name, bond_dim, save_dir=None):
     plt.figure(figsize=(10, 6))
     plt.plot(s_values, gaps, 'b-', linewidth=2, marker='o', markersize=4)
     plt.xlabel('Adiabatic Parameter s', fontsize=12)
-    plt.ylabel('Energy Gap', fontsize=12)
+    plt.ylabel('Normalized Energy Gap', fontsize=12)
     plt.title(f'{molecule_name} - Adiabatic Gap Evolution (Bond Dim {bond_dim})', fontsize=14)
     plt.grid(True, alpha=0.3)
+
+    # Set y-axis range from 0 to 1
+    plt.ylim(0, 1)
 
     # Highlight minimum gap
     min_idx = np.argmin(gaps)
@@ -76,9 +79,13 @@ def plot_bond_dimension_comparison(results_dict, molecule_name, save_dir=None):
                 marker='o', markersize=3, label=f'Bond Dim {bond_dim}')
 
     plt.xlabel('Adiabatic Parameter s', fontsize=12)
-    plt.ylabel('Energy Gap', fontsize=12)
+    plt.ylabel('Normalized Energy Gap', fontsize=12)
     plt.title(f'{molecule_name} - Gap Evolution Comparison (All Bond Dimensions)', fontsize=14)
     plt.grid(True, alpha=0.3)
+
+    # Set y-axis range from 0 to 1
+    plt.ylim(0, 1)
+
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
     plt.tight_layout()
@@ -118,9 +125,12 @@ def plot_minimum_gaps_vs_bond_dimension(results_dict, molecule_name, save_dir=No
     plt.figure(figsize=(10, 6))
     plt.plot(bond_dims, min_gaps, 'ro-', linewidth=2, markersize=8)
     plt.xlabel('Bond Dimension', fontsize=12)
-    plt.ylabel('Minimum Gap', fontsize=12)
+    plt.ylabel('Minimum Normalized Gap', fontsize=12)
     plt.title(f'{molecule_name} - Minimum Gap vs Bond Dimension', fontsize=14)
     plt.grid(True, alpha=0.3)
+
+    # Set y-axis range from 0 to 1
+    plt.ylim(0, 1)
 
     # Add value labels on points
     for bd, mg in zip(bond_dims, min_gaps):
@@ -187,9 +197,9 @@ def compute_gap(hamiltonian, k=2):
         return eigenvals[1] - eigenvals[0]
 
 
-def adiabatic_gap_analysis(H_initial, H_final, n_steps=20):
+def adiabatic_gap_analysis(H_initial, H_final, n_steps=20, rescale_gaps=True):
     """
-    Analyze the adiabatic gap evolution
+    Analyze the adiabatic gap evolution with optional rescaling
 
     Parameters:
     -----------
@@ -199,17 +209,33 @@ def adiabatic_gap_analysis(H_initial, H_final, n_steps=20):
         Final Hamiltonian
     n_steps : int
         Number of steps in the adiabatic evolution
+    rescale_gaps : bool
+        Whether to rescale initial and final Hamiltonian gaps to 1
 
     Returns:
     --------
     tuple
         (s_values, gaps) - adiabatic parameters and corresponding gaps
     """
+    # First compute initial and final gaps for rescaling
+    if rescale_gaps:
+        initial_gap = compute_gap(H_initial)
+        final_gap = compute_gap(H_final)
+
+        # Rescale Hamiltonians so their gaps are 1
+        H_initial_rescaled = H_initial / initial_gap if initial_gap > 0 else H_initial
+        H_final_rescaled = H_final / final_gap if final_gap > 0 else H_final
+
+        print(f"    Rescaling: Initial gap {initial_gap:.6f} → 1.0, Final gap {final_gap:.6f} → 1.0")
+    else:
+        H_initial_rescaled = H_initial
+        H_final_rescaled = H_final
+
     s_values = np.linspace(0, 1, n_steps)
     gaps = []
 
     for s in s_values:
-        H_s = construct_adiabatic_hamiltonian(H_initial, H_final, s)
+        H_s = construct_adiabatic_hamiltonian(H_initial_rescaled, H_final_rescaled, s)
         gap = compute_gap(H_s)
         gaps.append(gap)
 
