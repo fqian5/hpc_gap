@@ -7,6 +7,27 @@ No OpenFermion dependency required on cluster
 import numpy as np
 import json
 import os
+from scipy.sparse import issparse
+from scipy.sparse.linalg import eigsh, eigs
+
+def json_safe_convert(obj):
+    """Convert numpy/complex types to JSON-serializable types"""
+    if obj is None:
+        return None
+    elif isinstance(obj, np.ndarray):
+        return [json_safe_convert(item) for item in obj]
+    elif isinstance(obj, (np.integer, np.int64, np.int32)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float64, np.float32)):
+        return float(obj)
+    elif isinstance(obj, (np.complexfloating, np.complex128, np.complex64, complex)):
+        return {'real': float(obj.real), 'imag': float(obj.imag)}
+    elif isinstance(obj, (list, tuple)):
+        return [json_safe_convert(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: json_safe_convert(value) for key, value in obj.items()}
+    else:
+        return obj
 try:
     from symmer import PauliwordOp
     SYMMER_AVAILABLE = True
@@ -50,16 +71,27 @@ def load_pauli_hamiltonian_symmer(molecule_name):
         coefficients = []
 
         for pauli_string, coeff_data in pauli_terms.items():
+            # Pad Pauli string to full qubit length if needed
+            if len(pauli_string) < n_qubits:
+                pauli_string = pauli_string + 'I' * (n_qubits - len(pauli_string))
             pauli_strings.append(pauli_string)
             # Reconstruct complex coefficient
             coeff = coeff_data['real'] + 1j * coeff_data['imag']
             coefficients.append(coeff)
 
-        # Create PauliwordOp object
-        pauli_op = PauliwordOp(pauli_strings, coefficients)
+        # Create PauliwordOp object using from_list method
+        pauli_op = PauliwordOp.from_list(pauli_strings, coefficients)
 
-        # Convert to dense matrix
-        hamiltonian_matrix = pauli_op.to_sparse_matrix().toarray()
+        # Keep as sparse matrix for large systems, convert to dense for small ones
+        hamiltonian_sparse = pauli_op.to_sparse_matrix
+
+        if hamiltonian_sparse.shape[0] <= 1024:  # Small systems: use dense
+            hamiltonian_matrix = hamiltonian_sparse.toarray()
+            print(f"  Using dense matrix for small system: {hamiltonian_matrix.shape}")
+        else:  # Large systems: keep sparse
+            hamiltonian_matrix = hamiltonian_sparse
+            print(f"  Using sparse matrix for large system: {hamiltonian_matrix.shape}")
+            print(f"  Sparsity: {hamiltonian_sparse.nnz}/{hamiltonian_sparse.shape[0]**2} = {hamiltonian_sparse.nnz/hamiltonian_sparse.shape[0]**2:.6f}")
 
     else:
         # Fallback: manual construction
@@ -88,6 +120,29 @@ def load_pauli_hamiltonian_symmer(molecule_name):
 
     return hamiltonian_matrix, [hf_energy, fci_energy], n_qubits
 
+def compute_sparse_eigenvalues(hamiltonian, k=5):
+    """Compute lowest eigenvalues using sparse solvers"""
+    print(f"  Computing {k} lowest eigenvalues...")
+
+    if issparse(hamiltonian):
+        try:
+            # Use sparse eigensolver
+            eigenvalues, eigenvectors = eigsh(hamiltonian, k=k, which='SA', return_eigenvectors=True)
+            print(f"    Sparse eigensolver successful: found {len(eigenvalues)} eigenvalues")
+            return eigenvalues, eigenvectors
+        except Exception as e:
+            print(f"    Sparse eigensolver failed: {e}")
+            return None, None
+    else:
+        # Dense matrix - use appropriate solver based on size
+        if hamiltonian.shape[0] <= 1024:
+            # Small systems: full diagonalization
+            eigenvalues, eigenvectors = np.linalg.eigh(hamiltonian)
+            return eigenvalues[:k], eigenvectors[:, :k]
+        else:
+            print(f"    Matrix too large for dense diagonalization: {hamiltonian.shape}")
+            return None, None
+
 def create_hamiltonian(molecule_name, test_mode=False):
     """
     Load Pauli Hamiltonian and convert to matrix (cluster version)
@@ -111,17 +166,32 @@ def svd_based_mps_decomposition(hamiltonian, bond_dimensions):
 
     print(f"  Performing SVD-based MPS decomposition for {n_qubits} qubits...")
 
-    # For large systems, skip ground state computation and use simplified MPS
-    if hamiltonian.shape[0] > 1024:  # More than 10 qubits
-        print(f"    Large system detected ({hamiltonian.shape[0]}x{hamiltonian.shape[0]}) - using simplified MPS")
-        # Use random normalized state for demonstration
+    # Handle sparse vs dense matrices for eigenvalue computation
+    if issparse(hamiltonian):
+        print(f"    Sparse system detected ({hamiltonian.shape[0]}x{hamiltonian.shape[0]}) - using sparse eigensolver")
+        try:
+            # Use sparse eigensolver for ground state
+            eigenvalues, eigenvectors = eigsh(hamiltonian, k=1, which='SA', return_eigenvectors=True)
+            ground_state = eigenvectors[:, 0]  # Ground state eigenvector
+            ground_state = ground_state / np.linalg.norm(ground_state)  # Normalize
+            print(f"    Ground state energy from sparse solver: {eigenvalues[0]:.6f}")
+        except Exception as e:
+            print(f"    Sparse eigensolver failed: {e}, using random state")
+            # Fallback to random state
+            ground_state = np.random.randn(hamiltonian.shape[0]) + 1j * np.random.randn(hamiltonian.shape[0])
+            ground_state = ground_state / np.linalg.norm(ground_state)
+    elif hamiltonian.shape[0] > 1024:  # Large dense system
+        print(f"    Large dense system detected ({hamiltonian.shape[0]}x{hamiltonian.shape[0]}) - using random state")
+        # Use random normalized state for large dense systems
         ground_state = np.random.randn(hamiltonian.shape[0]) + 1j * np.random.randn(hamiltonian.shape[0])
         ground_state = ground_state / np.linalg.norm(ground_state)
     else:
-        # Get ground state vector for small systems only
+        # Small dense systems: use full diagonalization
+        print(f"    Small dense system - using full diagonalization")
         eigenvalues, eigenvectors = np.linalg.eigh(hamiltonian)
         ground_state = eigenvectors[:, 0]  # Ground state eigenvector
         ground_state = ground_state / np.linalg.norm(ground_state)  # Normalize
+        print(f"    Ground state energy: {eigenvalues[0]:.6f}")
 
     for bond_dim in bond_dimensions:
         print(f"    Bond dimension: {bond_dim}")
@@ -306,7 +376,7 @@ def save_mps_data(molecule_name, mps_results):
 
     filename = f'{molecule_name}_mps.txt'
     with open(filename, 'w') as f:
-        json.dump(serializable_results, f, indent=2)
+        json.dump(json_safe_convert(serializable_results), f, indent=2)
 
 def process_molecule(molecule_name, test_mode=False):
     """
@@ -324,6 +394,9 @@ def process_molecule(molecule_name, test_mode=False):
 
         print(f"  Using bond dimensions: {bond_dimensions}")
 
+        # Compute sparse eigenvalues for verification
+        sparse_eigenvalues, sparse_eigenvectors = compute_sparse_eigenvalues(hamiltonian, k=5)
+
         # Perform MPS decomposition
         mps_results = svd_based_mps_decomposition(hamiltonian, bond_dimensions)
 
@@ -338,8 +411,10 @@ def process_molecule(molecule_name, test_mode=False):
             'success': True,
             'n_qubits': n_qubits,
             'bond_dimensions': bond_dimensions,
-            'energies': energies,
-            'mps_overlaps': mps_overlaps
+            'energies': json_safe_convert(energies),
+            'mps_overlaps': json_safe_convert(mps_overlaps),
+            'sparse_eigenvalues': json_safe_convert(sparse_eigenvalues),
+            'is_sparse_matrix': issparse(hamiltonian)
         }
 
         print(f"  ✓ {molecule_name} processed successfully")

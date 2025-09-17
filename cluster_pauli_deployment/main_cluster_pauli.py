@@ -76,11 +76,29 @@ def run_analysis(molecules, processes=1, test_mode=False):
 
     return final_results
 
+def get_available_molecules():
+    """Dynamically determine which molecules are available based on existing files"""
+    import glob
+
+    pauli_files = glob.glob('*_pauli_hamiltonian.json')
+    available_molecules = []
+
+    for pauli_file in pauli_files:
+        molecule_name = pauli_file.replace('_pauli_hamiltonian.json', '')
+        try:
+            with open(pauli_file, 'r') as f:
+                data = json.load(f)
+            available_molecules.append(molecule_name)
+            print(f"✓ Found {pauli_file}: {data['n_qubits']} qubits, {len(data['pauli_terms'])} terms")
+        except Exception as e:
+            print(f"✗ Error reading {pauli_file}: {e}")
+
+    return available_molecules
+
 def main():
     parser = argparse.ArgumentParser(description='Pauli Hamiltonian cluster analysis')
-    parser.add_argument('--molecules', nargs='+',
-                        default=['H2', 'H4', 'BeH3', 'H2O'],
-                        help='Molecules to analyze')
+    parser.add_argument('--molecules', nargs='+', default=None,
+                        help='Molecules to analyze (default: auto-detect)')
     parser.add_argument('--processes', type=int, default=1,
                         help='Number of processes to use')
     parser.add_argument('--test', action='store_true',
@@ -92,37 +110,33 @@ def main():
     print("=" * 50)
     print("Using Symmer to read pre-generated Pauli Hamiltonians")
 
-    if args.test:
-        molecules = ['H2']
-        print("Running in TEST mode")
-    else:
-        molecules = args.molecules
-        print("Running FULL analysis")
+    # Auto-detect available molecules
+    available_molecules = get_available_molecules()
 
-    print(f"Molecules: {molecules}")
-    print(f"Processes: {args.processes}")
-
-    # Check for required Pauli Hamiltonian files
-    missing_files = []
-    for molecule in molecules:
-        pauli_file = f'{molecule}_pauli_hamiltonian.json'
-        try:
-            with open(pauli_file, 'r') as f:
-                data = json.load(f)
-            print(f"✓ Found {pauli_file}: {data['n_qubits']} qubits, {len(data['pauli_terms'])} terms")
-        except FileNotFoundError:
-            missing_files.append(pauli_file)
-            print(f"✗ Missing {pauli_file}")
-
-    if missing_files:
-        print(f"\nERROR: Missing Pauli Hamiltonian files:")
-        for file in missing_files:
-            print(f"  {file}")
-        print(f"\nPlease run 'python generate_pauli_hamiltonians.py' locally first")
-        print(f"and transfer the *_pauli_hamiltonian.json files to the cluster")
+    if not available_molecules:
+        print("ERROR: No Pauli Hamiltonian files found!")
+        print("Please run 'python generate_pauli_hamiltonians.py' locally first")
+        print("and transfer the *_pauli_hamiltonian.json files to the cluster")
         return 1
 
-    print(f"\n✓ All required Pauli Hamiltonian files found")
+    if args.test:
+        molecules = ['H2'] if 'H2' in available_molecules else available_molecules[:1]
+        print("Running in TEST mode")
+    else:
+        molecules = args.molecules if args.molecules else available_molecules
+        # Filter to only available molecules
+        molecules = [m for m in molecules if m in available_molecules]
+        print("Running FULL analysis")
+
+    print(f"Available molecules: {available_molecules}")
+    print(f"Processing molecules: {molecules}")
+    print(f"Processes: {args.processes}")
+
+    if not molecules:
+        print("ERROR: No valid molecules to process!")
+        return 1
+
+    print(f"\n✓ Found {len(molecules)} molecules to process")
 
     try:
         results = run_analysis(molecules, args.processes, args.test)
