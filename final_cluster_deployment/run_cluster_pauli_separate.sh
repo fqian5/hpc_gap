@@ -13,7 +13,7 @@
 module load miniforge/24.11.2-py312
 
 # Activate conda environment (should have numpy, scipy, matplotlib, symmer)
-source activate /cluster/tufts/lovelab/fqian03/condaenv/iadiabatic
+source activate /cluster/tufts/lovelab/fqian03/condaenv/gap
 
 echo "Starting HPC Gap Analysis (PAULI VERSION - SEPARATE MOLECULES)"
 echo "Job ID: $SLURM_JOB_ID"

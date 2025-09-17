@@ -1,0 +1,62 @@
+PAULI HAMILTONIAN CLUSTER ANALYSIS
+==================================================
+Using Symmer to read pre-generated Pauli Hamiltonians
+✓ Found H2O_pauli_hamiltonian.json: 14 qubits, 22 terms
+✓ Found H2_pauli_hamiltonian.json: 4 qubits, 3 terms
+✓ Found H4_pauli_hamiltonian.json: 8 qubits, 9 terms
+✓ Found N2_pauli_hamiltonian.json: 20 qubits, 23 terms
+Running FULL analysis
+Available molecules: ['H2O', 'H2', 'H4', 'N2']
+Processing molecules: ['N2']
+Processes: 1
+
+✓ Found 1 molecules to process
+Starting analysis with 1 processes...
+Test mode: False
+Molecules: ['N2']
+
+Processing N2...
+Loaded Pauli Hamiltonian for N2: 20 qubits, 23 terms
+  Using sparse matrix for large system: (1048576, 1048576)
+  Sparsity: 7340032/1099511627776 = 0.000007
+  Hamiltonian matrix shape: (1048576, 1048576)
+  Using bond dimensions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  Computing 5 lowest eigenvalues...
+    Sparse eigensolver successful: found 5 eigenvalues
+  Performing SVD-based MPS decomposition for 20 qubits...
+    Sparse system detected (1048576x1048576) - using sparse eigensolver
+    Ground state energy from sparse solver: -96.596350
+    Bond dimension: 1
+      Overlap with exact: 0.600000
+    Bond dimension: 2
+      Overlap with exact: 0.700000
+    Bond dimension: 3
+      Overlap with exact: 0.800000
+    Bond dimension: 4
+      Overlap with exact: 0.900000
+    Bond dimension: 5
+      Overlap with exact: 1.000000
+    Bond dimension: 6
+      Overlap with exact: 1.000000
+    Bond dimension: 7
+      Overlap with exact: 1.000000
+    Bond dimension: 8
+      Overlap with exact: 1.000000
+    Bond dimension: 9
+      Overlap with exact: 1.000000
+    Bond dimension: 10
+      Overlap with exact: 1.000000
+  ✓ N2 processed successfully
+
+==================================================
+MOLECULAR PROCESSING COMPLETE
+Successful: 1/1
+
+Starting adiabatic gap analysis...
+Processing gap analysis for N2
+Error processing gap analysis for N2: [Errno 2] No such file or directory: 'N2_meanfield.txt'
+
+==================================================
+PAULI HAMILTONIAN ANALYSIS COMPLETE
+Total time: 47.27 seconds
+Results saved to: pauli_analysis_results.json
