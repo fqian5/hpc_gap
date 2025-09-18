@@ -76,7 +76,7 @@ for mb in max_bond_list:
 
 
 import matplotlib.pyplot as plt
-x = np.linspace(1,len(max_num_layers_list),len(max_num_layers_list))
+x = np.linspace(1,len(max_bond_list),len(max_bond_list))
 plt.plot(x,overlap_list,marker = 'v', label = 'Overlap')
 plt.plot(x,min_diff_list,marker = 'o', label = 'Min Gap')
 plt.title('Min Gap and Overlap vs max layer of entangler for H8 chain')
